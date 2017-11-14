@@ -1,2 +1,2 @@
-pip uninstall WeightedMarkov
+pip uninstall --yes WeightedMarkov
 pip install .

@@ -5,6 +5,7 @@ from cvxopt import matrix, solvers
 from fractions import Fraction
 from copy import deepcopy
 from collections import defaultdict
+from numpy import unique
 
 '''These classes are only meant to work with integer strings '''
 class NaiveMarkov:
