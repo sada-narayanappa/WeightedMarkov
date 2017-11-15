@@ -21,6 +21,9 @@ class WeightedMarkov:
         self.order = order
         self.X = X;
 
+    def fit(self, X=None, order=1, numClasses=None):
+        return self.Compute(X, order, numClasses)
+        
     def Compute(self, X=None, order=1, numClasses=None):
         fS={}
         pS={}
