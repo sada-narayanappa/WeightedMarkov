@@ -12,6 +12,7 @@ from numpy import vstack
 import re
 from IPython.display import display
 from IPython.display import display, Math, Latex
+import numbers
 
 # All series must have same number of states
 #
@@ -387,7 +388,7 @@ class WeightedHOMVMarkov:
         return sol, predicted;
 
     def makeX(self, c):
-        if ( type(c) != int):
+        if not ( isinstance( c , numbers.Number) ):
             return c;
         x = [0 for _ in range(self.nStates)]
         x[c]=1
@@ -426,7 +427,7 @@ class WeightedHOMVMarkov:
 
         return Xr_1, Pr_1;
 
-    def SelfEval(self):
+    def SelfEval(self, scoreFirstOnly=False, msg=None):
         Xr=[None for _ in range(len(self.X))]
         X = self.X
         order = self.order
@@ -447,7 +448,9 @@ class WeightedHOMVMarkov:
             #break;
 
         for i in range(len(X)):
-            WeightedHOMVMarkov.Score(P[:,i], X[i][order:] )
+            WeightedHOMVMarkov.Score(P[:,i], X[i][order:] , msg=msg)
+            if(scoreFirstOnly):
+                break;
             
         return P
     
