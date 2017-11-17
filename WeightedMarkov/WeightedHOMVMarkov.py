@@ -13,21 +13,6 @@ import re
 from IPython.display import display
 from IPython.display import display, Math, Latex
 
-import random
-import itertools as it
-import cvxopt
-from cvxopt import matrix, solvers
-from fractions import Fraction
-from copy import deepcopy
-from collections import defaultdict
-import numpy as np;
-from numpy import unique
-import pandas as pd;
-from numpy import vstack
-import re
-from IPython.display import display
-from IPython.display import display, Math, Latex
-
 # All series must have same number of states
 #
 
@@ -222,7 +207,7 @@ class WeightedHOMVMarkov:
         display(Math(s))
     
     def PrepareMatrices(self):
-        for i in range(len(X)):
+        for i in range(len(self.X)):
             self.PrepareMatrices1(i)
             
         return self.c[0], self.A[0], self.b[0];
@@ -350,7 +335,7 @@ class WeightedHOMVMarkov:
             for ii, f in enumerate(np.array([_ for _ in self.sol[i]['x'].T][:-1]) ):
                 if ( f < 0.00001):
                     continue;
-                pi = ii % order
+                pi = ii % self.order
                 pp = (i+1, ps[ii][0]+1)
                 #  print("{} : {:.4f}".format(pp, f), end=' ' )
                 if ( abs(1-f) <0.00001):
@@ -408,9 +393,11 @@ class WeightedHOMVMarkov:
         return np.matrix(x).T;
     
     def Predict(self, Xr, randomized=False):
+        ps=list(it.product(range(self.order), repeat=2))
         Xr_1= [None for _ in range(len(self.X))]
         Pr_1= [-1 for _ in range(len(self.X))]
 
+        order = self.order
         for i,s in enumerate(self.sol):
             if (Xr[i] is None):
                 continue;
@@ -429,9 +416,9 @@ class WeightedHOMVMarkov:
                     break;
 
                 if (PXr is None):
-                    PXr = lmbda * hm.pS[idx] * makeX(Xr[xi][pi], self.nStates)
+                    PXr = lmbda * self.pS[idx] * self.makeX(Xr[xi][pi])
                 else:
-                    PXr += lmbda * hm.pS[idx] * makeX(Xr[xi][pi], self.nStates)
+                    PXr += lmbda * self.pS[idx] * self.makeX(Xr[xi][pi])
 
             Xr_1[i] = PXr
             Pr_1[i] = -1 if PXr is None else np.argmax(PXr)
@@ -441,12 +428,13 @@ class WeightedHOMVMarkov:
     def SelfEval(self):
         Xr=[None for _ in range(len(self.X))]
         X = self.X
+        order = self.order
         
         for i in range(min([len(c) for c in X]) - order):
             for ii in range(len(Xr)):
                 Xr[ii] = list(reversed(X[ii][i:i+order] ))
 
-            Xr_1,pr_1 = hm.Predict(Xr)
+            Xr_1,pr_1 = self.Predict(Xr)
 
             if (i==0):
                 for j, jj in enumerate(Xr_1):
