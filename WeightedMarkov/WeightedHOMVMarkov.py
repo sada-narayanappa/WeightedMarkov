@@ -170,8 +170,9 @@ class WeightedHOMVMarkov:
         return (s)
 
     def Dump(self):
-        self.Mdisplay(self.fS, self.pS, self.xHats)
-        
+        s = self.Mdisplay(self.fS, self.pS, self.xHats)
+        return s;
+    
         
     def DisplayCAb(self, j = 0):
         s=len(self.X)
