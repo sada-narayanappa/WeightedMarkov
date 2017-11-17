@@ -468,7 +468,7 @@ class WeightedHOMVMarkov:
         if (printOut):
             print("=======================Metrics : ", msg)
             print("orig=>{}\npred=>{}".format(a[0:80], b[0:80]))
-            print("Total %d, correct %d, acc: %3.2f"%(n,t,t/n))
+            print("Total %d, correct %d, acc: %3.2f %%"%(n,t,t*100/n))
             for i,c in totalClass.items():
                 acc = correctClass[i]/c
                 print("class: {} total: {}, correct: {}, accuracy: {}".format(i, c, correctClass[i], acc))
