@@ -13,6 +13,9 @@ import re
 from IPython.display import display
 from IPython.display import display, Math, Latex
 
+# Do not use this class -> it is here only for academic demostration purpose
+# For all purpose you should use WeightedMVHOMarkov - that is generic for higher order multi variate
+#
 class WeightedMarkov:
     """An higher order multi variate Markov Chain"""
     def __init__(self, X= None, nStates=None, order=1):
