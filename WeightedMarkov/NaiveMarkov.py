@@ -6,16 +6,12 @@ from fractions import Fraction
 from copy import deepcopy
 from collections import defaultdict
 from numpy import unique
-import MarkovBase
 
-'''
-These classes are only meant to work with integer strings indexed from 0
-
-'''
-class NaiveMarkov(MarkovBase):
-    """Initialized with a delimiter and the order of the Markov chain."""
-    def __init__(self, delim=' ', order=1, n=10000):
-        MarkovBase.__init(dself, delim, order, n
+'''These classes are only meant to work with integer strings '''
+class NaiveMarkov:
+    """An nth-Order Markov Chain class with some lexical processing elements."""
+    def __init__(self, delim, order, n=10000):
+        """Initialized with a delimiting character (usually a space) and the order of the Markov chain."""
         self.states = {}
         self.delim = delim
         self.max = n
@@ -23,7 +19,6 @@ class NaiveMarkov(MarkovBase):
             self.order = order
         else:
             raise Exception('Markov Chain order cannot be negative or zero.')
-            
 
     # Must provide classes encoded by 0, 1, 2 etc
     def Freq(s1, s2 = None, numClasses=None):
