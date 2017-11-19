@@ -10,6 +10,7 @@ setup(name='WeightedMarkov',
       packages = ['WeightedMarkov'],
       package_data={'WeightedMarkov':['*']},
       zip_safe=False,
+      zip_ok=False,
       install_requires=['Jupytils', 'cvxopt'],
       classifiers=[
           # How mature is this project? Common values are

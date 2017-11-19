@@ -6,16 +6,10 @@ from fractions import Fraction
 from copy import deepcopy
 from collections import defaultdict
 from numpy import unique
-import MarkovBase
 
-'''
-These classes are only meant to work with integer strings indexed from 0
-
-'''
-class NaiveMarkov(MarkovBase):
-    """Initialized with a delimiter and the order of the Markov chain."""
-    def __init__(self, delim=' ', order=1, n=10000):
-        MarkovBase.__init(dself, delim, order, n
+'''These classes are only meant to work with integer strings '''
+class MarkovBase:
+    def __init__(self, delim, order):
         self.states = {}
         self.delim = delim
         self.max = n
@@ -23,9 +17,9 @@ class NaiveMarkov(MarkovBase):
             self.order = order
         else:
             raise Exception('Markov Chain order cannot be negative or zero.')
-            
 
     # Must provide classes encoded by 0, 1, 2 etc
+    @staticmethod
     def Freq(s1, s2 = None, numClasses=None):
         if len(s1) <= 0:
             return None;
@@ -52,17 +46,7 @@ class NaiveMarkov(MarkovBase):
         return tokens;
 
     def fit(self, sample):
-        prev = tuple(['' for i in range(self.order)])
-        tokens = self.GetTokens(sample)
-        self.tokens = tokens;
-        
-        self.max = len(tokens)
-        for t in tokens:
-            if not prev in self.states:
-                self.states[prev] = []
-            curr = prev[1:] + (t,)
-            self.states[prev].append(curr)
-            prev = curr
+        pass;
    
     def NextState(self, Xt=None, n=None):
         if Xt is None or not Xt in self.states.keys():
@@ -95,6 +79,7 @@ class NaiveMarkov(MarkovBase):
         return ret;
 
 
+    @staticmethod
     def Score(a, b, printOut=True, msg=None):
         n=0;
         t=0;
