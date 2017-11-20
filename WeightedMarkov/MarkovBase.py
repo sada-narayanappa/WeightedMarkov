@@ -6,79 +6,18 @@ from fractions import Fraction
 from copy import deepcopy
 from collections import defaultdict
 from numpy import unique
+import numpy as np
+import re;
 
-'''These classes are only meant to work with integer strings '''
 class MarkovBase:
-    def __init__(self, delim, order):
-        self.states = {}
-        self.delim = delim
-        self.max = n
-        if order > 0:
-            self.order = order
-        else:
-            raise Exception('Markov Chain order cannot be negative or zero.')
-
-    # Must provide classes encoded by 0, 1, 2 etc
-    @staticmethod
-    def Freq(s1, s2 = None, numClasses=None):
-        if len(s1) <= 0:
-            return None;
-
-        if (s2 is None):
-            s2 = s1[1:]
-
-        numClasses = numClasses if numClasses else max(max(s1), max(s2))+1
-        F=np.zeros((numClasses, numClasses))
-        for z in zip(s2,s1):
-            F[(z)] += 1
-
-        F=np.matrix(F)
-        P=F.copy();
-        P = P/P.sum(axis=0)
-        return F, P
+    def __init__(self, X=[], nStates=0, order= 1):
+        assert order   > 0, 'Markov Chain order must be > 0'
+        assert nStates > 0, 'Markov Chain number of States must be > 0'
+        self.X = X
+        self.nStates = nStates
+        self.order = order
+        self.states= {}
     
-    def GetTokens(self, sample):
-        if (type(sample) == str ):
-            tokens = sample.split(self.delim)
-        else:
-            tokens = sample;
-            
-        return tokens;
-
-    def fit(self, sample):
-        pass;
-   
-    def NextState(self, Xt=None, n=None):
-        if Xt is None or not Xt in self.states.keys():
-            Xt = tuple(['' for i in range(self.order)])
-        ri = random.randint(0, len(self.states[Xt])-1)
-        #print("{}:{}:{} ".format(Xt, ri, len(self.states[Xt])-1), end='')
-        t = self.states[Xt][ri]
-        Xt1 = t; #t[len(t)-1]
-        
-        return Xt1;
-    
-    def Predict(self, Xt=None, n=None):
-        ret= [] if Xt is None else [Xt[-1]]
-        #print ("HHH=>", ret)
-        for i in range(self.max):
-            c = self.NextState(Xt);
-            ret.append(c[-1])
-        #print ("HHH=>", ret)
-            
-        return ret
-
-    def PredictO(self, orig, n=None):
-        ret= [orig[j] for j in range(self.order)]
-        start = tuple(ret)
-        for i in range(len(orig)-self.order):
-            start = tuple([orig[j+i] for j in range(self.order)])
-            #print(start, end='', sep= ';')
-            c = self.NextState(start);
-            ret.append(c[-1])
-        return ret;
-
-
     @staticmethod
     def Score(a, b, printOut=True, msg=None):
         n=0;
@@ -101,6 +40,58 @@ class MarkovBase:
             print("Total %d, correct %d, acc: %3.2f"%(n,t,t/n))
             for i,c in totalClass.items():
                 acc = correctClass[i]/c
-                print("class: {} total: {}, correct: {}, accuracy: {}".format(i, c, correctClass[i], acc))
+                print("class:{} total:{}, correct:{}, accuracy:{}".format(i, c, correctClass[i], acc))
 
         return n, t, totalClass
+    
+    # Must provide classes encoded by 0, 1, 2 etc
+    def Freq(self, s1, s2 = None):
+        if len(s1) <= 0:  return None;
+        if (s2 is None):  s2 = s1[1:]
+
+        F=np.zeros((self.nStates, self.nStates))
+        for z in zip(s2,s1):
+            F[(z)] += 1
+
+        F=np.matrix(F)
+        div = F.sum(axis=0)
+        for o,c in enumerate(div.flat):
+            if (c==0):
+                F[:,o]=1
+        
+        P=F.copy();
+        P = P/P.sum(axis=0)
+        return F, P
+
+    def M(self,m, name="", useFrac=False, call_display=True, showdim=True, precision=4):
+        np.set_printoptions(precision=precision, linewidth=180)
+        name = name + " =" if name != "" else ""
+        dim = "";
+        if (showdim):
+            dim = " \\times ".join(map(str, (m.shape) )) ;
+        if (useFrac):
+            m=np.array([ str(Fraction(_).limit_denominator()) for _ in m.flat]).reshape(m.shape)
+        s = str(m).replace("'", '')
+        s=s.replace('\\\\', '\\')
+        s = s.replace('[', '')
+        s = s.replace(']', '')
+        s = s.replace('\n', '\\\\\\\\<NEW-LINE>')
+        s = re.sub( '\s+', ' ', s ).strip()
+        s = s.replace('<NEW-LINE>', "\n")
+        s = re.sub('\n\s+', '', s)
+        s = s.replace(' ', ' & ')
+        s = name + "\\begin{bmatrix}\n" + s + "\n\\end{bmatrix}" +  dim + "\n"
+        #print self.a
+        if ( call_display):
+            display(Math(s))
+        return s;    
+
+    
+    #---- Private stuff
+    def Encode(self, y):
+        l = preprocessing.LabelEncoder()
+        y = l.fit_transform(y);
+        return y, l.classes_
+
+
+    

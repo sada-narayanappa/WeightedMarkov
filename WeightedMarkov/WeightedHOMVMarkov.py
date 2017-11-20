@@ -13,17 +13,17 @@ import re
 from IPython.display import display
 from IPython.display import display, Math, Latex
 import numbers
+from WeightedMarkov.MarkovBase import *;
 
 # All series must have same number of states
 #
 
-class WeightedHOMVMarkov:
+class WeightedHOMVMarkov(MarkovBase):
     """An higher order multi variate Markov Chain"""
     def __init__(self, X= None, nStates=None, order=1):
         assert order > 0, "order cannot be negative"
-        self.nStates = nStates
-        self.order = order
-        self.X = X;
+        super(WeightedHOMVMarkov, self).__init__(X=X, nStates=nStates, order=order)
+        
         s = len(X)
         self.c = [0 for _ in range(s)];
         self.A = [0 for _ in range(s)];
@@ -58,35 +58,6 @@ class WeightedHOMVMarkov:
         
         return fS, pS, xHats;
     
-    #---- Private stuff
-    def Encode(self, y):
-        l = preprocessing.LabelEncoder()
-        y = l.fit_transform(y);
-        return y, l.classes_
-
-    #--- 
-    # Must provide classes encoded by 0, 1, 2 etc
-    def Freq(self, s1, s2 = None):
-        if len(s1) <= 0:
-            return None;
-
-        if (s2 is None):
-            s2 = s1[1:]
-
-        F=np.zeros((self.nStates, self.nStates))
-        for z in zip(s2,s1):
-            F[(z)] += 1
-
-        F=np.matrix(F)
-        div = F.sum(axis=0)
-        for o,c in enumerate(div.flat):
-            if (c==0):
-                F[:,o]=1
-        
-        P=F.copy();
-        P = P/P.sum(axis=0)
-        return F, P
-    
 
     def computeXHat(self, s):
         xHat=np.zeros(self.nStates)
@@ -99,46 +70,22 @@ class WeightedHOMVMarkov:
 
         return ret;
 
-    def M(self,m, name="", useFrac=False, call_display=True, showdim=True, precision=4):
-        np.set_printoptions(precision=precision, linewidth=180)
-        name = name + " =" if name != "" else ""
-        dim = "";
-        if (showdim):
-            dim = " \\times ".join(map(str, (m.shape) )) ;
-        if (useFrac):
-            m=np.array([ str(Fraction(_).limit_denominator()) for _ in m.flat]).reshape(m.shape)
-        s = str(m).replace("'", '')
-        s=s.replace('\\\\', '\\')
-        s = s.replace('[', '')
-        s = s.replace(']', '')
-        s = s.replace('\n', '\\\\\\\\<NEW-LINE>')
-        s = re.sub( '\s+', ' ', s ).strip()
-        s = s.replace('<NEW-LINE>', "\n")
-        s = re.sub('\n\s+', '', s)
-        s = s.replace(' ', ' & ')
-        s = name + "\\begin{bmatrix}\n" + s + "\n\\end{bmatrix}" +  dim + "\n"
-        #print self.a
-        if ( call_display):
-            display(Math(s))
-        return s;
-    
-    #Display thr matrix
-    def Matdisplay(self,*M, names=None, useFractions=False, display=False):
+    #Display the matrix
+    def Matdisplay(self,*Ms, names=None, useFractions=False, display=False):
         s = ""
         if (names is None):
-            names = ["" for i in range(len(M)) ]
-        for i, m in enumerate(M):
+            names = ["" for i in range(len(Ms)) ]
+        for i, m in enumerate(Ms):
             if str(type(np.array(m).flat[0])).find('str') < 0:
                 useFrac = useFractions
             else:
                 useFrac = False
             
-            s+= self.M(m=m, name=names[i], useFrac=useFrac, call_display=False, showdim=False);
+            s+= self.M1(m=m, name=names[i], useFrac=useFrac, call_display=False, showdim=False);
 
         if (display):
             display(Math(s))
         return (s)
-    
 
     def MdisplayPS(self,useFractions=True):
         s=""
@@ -367,26 +314,6 @@ class WeightedHOMVMarkov:
         
         return slt;
 
-    def PredictOld(self, CtIn, randomized=False):
-        sol = np.matrix ([0. for i in self.xHats[0]]).T
-        Ct = deepcopy(CtIn)
-        if ( type(Ct[0]) == list):
-            for i in range(len(Ct)):
-                Ct[i] = np.matrix(Ct[i]).T
-            
-        for i in range(self.order):
-            Qx =  self.pS[i] * Ct[i]
-            Qx1=  Qx * self.p[i]
-            sol += Qx1
-        self.sol = sol
-        
-        mm=[i for i in range(self.nStates) if self.sol[i] == max(self.sol)]  # Get all the candidates
-        if ( randomized):
-            predicted = mm[random.randint(0,len(mm)-1)]
-        predicted = mm[0]
-
-        return sol, predicted;
-
     def makeX(self, c):
         if not ( isinstance( c , numbers.Number) ):
             return c;
@@ -454,27 +381,3 @@ class WeightedHOMVMarkov:
             
         return P
     
-    def Score(a, b, printOut=True, msg=None):
-        n=0;
-        t=0;
-        z = zip(a,b)
-        correctClass=defaultdict(int)
-        totalClass=defaultdict(int)
-
-        for c in z:
-            totalClass[c[0]] += 1;
-
-            if(c[0] == c[1]):
-                correctClass[c[0]] += 1;
-                t+= 1
-            n += 1
-
-        if (printOut):
-            print("=======================Metrics : ", msg)
-            print("orig=>{}\npred=>{}".format(a[0:80], b[0:80]))
-            print("Total %d, correct %d, acc: %3.2f %%"%(n,t,t*100/n))
-            for i,c in totalClass.items():
-                acc = correctClass[i]/c
-                print("class: {} total: {}, correct: {}, accuracy: {}".format(i, c, correctClass[i], acc))
-
-        return n, t, totalClass

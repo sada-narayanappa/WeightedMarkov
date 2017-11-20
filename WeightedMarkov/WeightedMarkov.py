@@ -12,26 +12,25 @@ from numpy import vstack
 import re
 from IPython.display import display
 from IPython.display import display, Math, Latex
+from WeightedMarkov.MarkovBase import *;
 
 # Do not use this class -> it is here only for academic demostration purpose
 # For all purpose you should use WeightedMVHOMarkov - that is generic for higher order multi variate
 #
-class WeightedMarkov:
+class WeightedMarkov(MarkovBase):
     """An higher order multi variate Markov Chain"""
     def __init__(self, X= None, nStates=None, order=1):
         assert order > 0, "order cannot be negative"
-        self.nStates = nStates
-        self.order = order
-        self.X = X;
+        super(WeightedMarkov, self).__init__(X=X, nStates=nStates, order=order)
 
-    def fit(self, X=None, order=1, numClasses=None):
-        return self.Compute(X, order, numClasses)
+    def fit(self, X=None):
+        return self.Compute(X)
         
-    def Compute(self, X=None, order=1, numClasses=None):
+    def Compute(self, X):
         fS={}
         pS={}
         xHats=[]
-        numClasses = numClasses if numClasses is not None else len(unique(X[0]))
+        numClasses = self.nStates
         self.numClasses = numClasses
 
         if ( X is None):
@@ -41,48 +40,21 @@ class WeightedMarkov:
             order = self.order
         
         for x in X:
-            xHats.append(self.computeXHat(x, numClasses) )
+            xHats.append(self.computeXHat(x) )
 
-        for i in range(order):
+        for i in range(self.order):
             a1 = X[0]
             a2 = a1[i+1:]
-            F=self.Freq(a1, a2, numClasses)
+            F=self.Freq(a1, a2)
             fS[i] = F[0]
             pS[i] = F[1]
         
-        self.fS = fS; self.pS = pS; self. xHats = xHats;
+        self.fS = fS; self.pS = pS; self.xHats = xHats;
         
         return fS, pS, xHats;
-    
-    #---- Private stuff
-    def Encode(self, y):
-        l = preprocessing.LabelEncoder()
-        y = l.fit_transform(y);
-        return y, l.classes_
 
-    #--- 
-    # Must provide classes encoded by 0, 1, 2 etc
-    def Freq(self, s1, s2 = None, numClasses=None):
-        if len(s1) <= 0:
-            return None;
-
-        if (s2 is None):
-            s2 = s1[1:]
-
-        numClasses = numClasses if numClasses else max(max(s1), max(s2))+1
-        F=np.zeros((numClasses, numClasses))
-        for z in zip(s2,s1):
-            F[(z)] += 1
-
-        F=np.matrix(F)
-        P=F.copy();
-        P = P/P.sum(axis=0)
-        return F, P
-    
-
-    def computeXHat(self, s, numClasses =None):
-        numClasses = numClasses if numClasses else max(s)+1
-        xHat=np.zeros(numClasses)
+    def computeXHat(self, s):
+        xHat=np.zeros(self.nStates)
         t=pd.Series(s).value_counts() 
         for i,j in t.items():    
             xHat[i] =j
@@ -91,33 +63,8 @@ class WeightedMarkov:
         ret = np.array([ret]).T
 
         return ret;
-
-    @staticmethod
-    def M(m, name="", useFrac=False, call_display=True, showdim=True, precision=4):
-        np.set_printoptions(precision=precision, linewidth=180)
-        name = name + " =" if name != "" else ""
-        dim = "";
-        if (showdim):
-            dim = " \\times ".join(map(str, (m.shape) )) ;
-        if (useFrac):
-            m=np.array([ str(Fraction(_).limit_denominator()) for _ in m.flat]).reshape(m.shape)
-        s = str(m).replace("'", '')
-        s=s.replace('\\\\', '\\')
-        s = s.replace('[', '')
-        s = s.replace(']', '')
-        s = s.replace('\n', '\\\\\\\\<NEW-LINE>')
-        s = re.sub( '\s+', ' ', s ).strip()
-        s = s.replace('<NEW-LINE>', "\n")
-        s = re.sub('\n\s+', '', s)
-        s = s.replace(' ', ' & ')
-        s = name + "\\begin{bmatrix}\n" + s + "\n\\end{bmatrix}" +  dim + "\n"
-        #print self.a
-        if ( call_display):
-            display(Math(s))
-        return s;
-    
     #Display thr matrix
-    def Matdisplay(*M, names=None, useFractions=False, display=False):
+    def Matdisplay(self, *M, names=None, useFractions=False, display=False):
         s = ""
         if (names is None):
             names = ["" for i in range(len(M)) ]
@@ -126,31 +73,30 @@ class WeightedMarkov:
                 useFrac = useFractions
             else:
                 useFrac = False
-            
-            s+= WeightedMarkov.M(m, name=names[i], useFrac=useFrac, call_display=False, showdim=False);
+
+            s+= self.M(m, name=names[i], useFrac=useFrac, call_display=False, showdim=False);
 
         if (display):
             display(Math(s))
         return (s)
     
-
-    def Mdisplay(fS, pS, xHats):
+    def Mdisplay(self,fS, pS, xHats):
         g = ["\hat{{F}}^{{{}}}".format(_) for _ in sorted(fS.keys())]
         v = [_[1] for _ in sorted(fS.items())]
-        s = WeightedMarkov.Matdisplay(*v, names=g)
+        s = self.Matdisplay(*v, names=g)
 
         g = ["\hat{{P}}^{{{}}}".format(_) for _ in sorted(pS.keys())]
         v = [_[1] for _ in sorted(pS.items())]
-        s += WeightedMarkov.Matdisplay(*v, names=g, useFractions=True)
+        s += self.Matdisplay(*v, names=g, useFractions=True)
 
         g = ["\hat{{x}}_{}".format(i+1) for i in range(len(xHats))]
-        s+= WeightedMarkov.Matdisplay(*xHats, names=g, useFractions=True)
+        s+= self.Matdisplay(*xHats, names=g, useFractions=True)
         
         display(Math(s))
         return (s)
 
     def Dump(self):
-        WeightedMarkov.Mdisplay(self.fS, self.pS, self.xHats)
+        self.Mdisplay(self.fS, self.pS, self.xHats)
         
         
     def DisplayCAb(self):
@@ -162,9 +108,9 @@ class WeightedMarkov:
         for _ in range(self.order):
             t += '\n\lambda_{} >= 0'.format(_)
 
-        for _ in range(self.numClasses):
+        for _ in range(self.nStates):
             t += '\n-'
-        for _ in range(self.numClasses):
+        for _ in range(self.nStates):
             t += '\n+'
         t += '\nw >= 0'    
 
@@ -177,7 +123,7 @@ class WeightedMarkov:
         dd =np.matrix([dd]).T
 
         cAb = [np.matrix(self.c),np.matrix(self.A),np.matrix([self.b]).T, dd]
-        s = WeightedMarkov.Matdisplay(*cAb, names="c A b description".split(), useFractions=True)
+        s = self.Matdisplay(*cAb, names="c A b description".split(), useFractions=True)
         display(Math(s))
     
     def PrepareMatrices(self):
@@ -329,7 +275,7 @@ class WeightedMarkov:
             sol += Qx1
         self.sol = sol
         
-        mm=[i for i in range(self.numClasses) if self.sol[i] == max(self.sol)]  # Get all the candidates
+        mm=[i for i in range(self.nStates) if self.sol[i] == max(self.sol)]  # Get all the candidates
         if ( randomized):
             predicted = mm[random.randint(0,len(mm)-1)]
         predicted = mm[0]
