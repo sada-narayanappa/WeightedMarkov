@@ -24,10 +24,11 @@ class NaiveMarkov(MarkovBase):
             
         return tokens;
 
-    def fit(self, sample):
+    def fit(self, sample=None):
         prev = tuple(['' for i in range(self.order)])
         tokens = self.GetTokens(sample)
         self.tokens = tokens;
+        self.X = [tokens]
         
         self.max = len(tokens)
         for t in tokens:
