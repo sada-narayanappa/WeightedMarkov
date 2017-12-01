@@ -366,8 +366,9 @@ class WeightedHOMVMarkov(MarkovBase):
             Xr_1,pr_1 = self.Predict(Xr)
 
             if (i==0):
+                print("Printing the predictions once: ")
                 for j, jj in enumerate(Xr_1):
-                    print(j, np.array(jj.flat), pr_1[j], X[j][i+order+1])
+                    print("#: {}, P. Matrix: {}, Pred: {}, Actual:{}".format(j, np.array(jj.flat), pr_1[j], X[j][i+order+1]) )
                 P=pr_1
             else:
                 P=np.vstack((P,pr_1))
@@ -375,7 +376,7 @@ class WeightedHOMVMarkov(MarkovBase):
             #break;
 
         for i in range(len(X)):
-            self.Score(X[i][order:], P[:,i], msg=msg)
+            self.Score(X[i][order:], P[:,i], msg=msg + " Series " + str(i+1) )
             if(scoreFirstOnly):
                 break;
             
