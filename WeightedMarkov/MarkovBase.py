@@ -19,7 +19,9 @@ class MarkovBase:
         self.states= {}
     
     @staticmethod
-    def Score(a, b, printOut=True, msg=None):
+    def Score(original, predicted, printOut=True, msg=None):
+        a = original
+        b = predicted
         n=0;
         t=0;
         z = zip(a,b)
@@ -43,7 +45,45 @@ class MarkovBase:
                 print("class:{} total:{}, correct:{}, accuracy:{}".format(i, c, correctClass[i], acc))
 
         return n, t, totalClass
-    
+
+    @staticmethod
+    def approx(i,n, eps=0.000001):
+        ret = abs(n - i) <= eps
+        return ret;
+
+    @staticmethod
+    def StationaryDist(k, printOut=True):
+        k = np.matrix(k)
+        eigenvalues, eigenvectors = np.linalg.eig(k)
+        ev, et = eigenvalues, eigenvectors
+        colSumsK = k.sum(axis=0)
+
+        if(any([not MarkovBase.approx(c,1) for c in colSumsK.flat])):
+            print("Columns sums !=1 - not a suitable Trans Matrix: taking Transpose")
+            k = k.T
+            colSums1 = k.sum(axis=0)
+            if(any([not MarkovBase.approx(c,1) for c in colSums1.flat])):
+                print("Columns sums !=1 - not a suitable Trans Matrix")
+                return colSums
+
+        eigenvalues, eigenvectors = np.linalg.eig(k)
+        ev, et = eigenvalues, eigenvectors
+        evl = np.argmax(ev)
+        evt = et[:,evl]
+        evr = evt/evt.sum(axis=0)
+
+        stationatyDist = evt
+        stationaryPI = evr
+
+        colSums = et.sum(axis=0)
+        test=k * evr
+
+        if (printOut):
+            print("Eigen Values/Vectors of\n{}\n{}\n=EV:{}\n{}\n".format( k, colSumsK, ev, et))
+            print("index={} Stat Disy:\n{} \nStatPI:\n{}\n{})".format( evl, stationatyDist.T, stationaryPI.T, test) )
+
+        return stationatyDist, stationaryPI
+
     # Must provide classes encoded by 0, 1, 2 etc
     def Freq(self, s1, s2 = None):
         if len(s1) <= 0:  return None;

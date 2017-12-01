@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='WeightedMarkov',
-      version='0.122',
+      version='0.123',
       description='Implementation of Weighted Markov Chain as in Wai Ki Ching, Eric S. Fung, Michael K. Ng',
       url='https://github.com/sada-narayanappa/WeightedMarkov.git',
       author='Code Red',

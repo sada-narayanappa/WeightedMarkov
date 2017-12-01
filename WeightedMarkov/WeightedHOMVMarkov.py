@@ -81,7 +81,7 @@ class WeightedHOMVMarkov(MarkovBase):
             else:
                 useFrac = False
             
-            s+= self.M1(m=m, name=names[i], useFrac=useFrac, call_display=False, showdim=False);
+            s+= self.M(m=m, name=names[i], useFrac=useFrac, call_display=False, showdim=False);
 
         if (display):
             display(Math(s))
@@ -375,7 +375,7 @@ class WeightedHOMVMarkov(MarkovBase):
             #break;
 
         for i in range(len(X)):
-            WeightedHOMVMarkov.Score(P[:,i], X[i][order:] , msg=msg)
+            self.Score(X[i][order:], P[:,i], msg=msg)
             if(scoreFirstOnly):
                 break;
             
