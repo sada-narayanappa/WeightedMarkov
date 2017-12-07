@@ -41,7 +41,7 @@ class WeightedHOMVMarkov(MarkovBase):
         
         for x in X:
             xHats.append(self.computeXHat(x) )
-
+            
         for i,j in it.product(range(len(X)), repeat=2):
             for o in range(self.order):
                 a1 = X[j]
@@ -273,8 +273,8 @@ class WeightedHOMVMarkov(MarkovBase):
             
         return self.sol;
     
-    def DumpSolution(self):
-        ps=list(it.product(range(self.order), repeat=2))
+    def DumpSolutionOLD(self):
+        ps=self.ps
         slt=r'''
         \begin{equation}
         \begin{aligned}
@@ -285,9 +285,12 @@ class WeightedHOMVMarkov(MarkovBase):
                 if ( f < 0.00001):
                     continue;
                 pi = ii % self.order
+                # print("==>", ii, len(ps), ps);
+                if ( ii >= len(ps) ):
+                    print("=> Error", ii, ps)
                 pp = (i+1, ps[ii][0]+1)
                 #  print("{} : {:.4f}".format(pp, f), end=' ' )
-                if ( abs(1-f) <0.00001):
+                if ( abs(1-f) <0.0001):
                     f=''
                 else:
                     f = str(round(f, 4))
@@ -313,16 +316,9 @@ class WeightedHOMVMarkov(MarkovBase):
         display(Math(slt))
         
         return slt;
-
-    def makeX(self, c):
-        if not ( isinstance( c , numbers.Number) ):
-            return c;
-        x = [0 for _ in range(self.nStates)]
-        x[c]=1
-        return np.matrix(x).T;
-    
-    def Predict(self, Xr, randomized=False):
-        ps=list(it.product(range(self.order), repeat=2))
+    def PredictOLD(self, Xr, randomized=False):
+        ps = self.ps
+        #ps=list(it.product(range(self.nStates), repeat=2))
         Xr_1= [None for _ in range(len(self.X))]
         Pr_1= [-1 for _ in range(len(self.X))]
 
@@ -353,8 +349,82 @@ class WeightedHOMVMarkov(MarkovBase):
             Pr_1[i] = -1 if PXr is None else np.argmax(PXr)
 
         return Xr_1, Pr_1;
+    
+    def DumpSolution(self):
+        slt=r'''
+        \begin{equation}
+        \begin{aligned}
+        '''; #begin{flalign*}'
+        for i,s in enumerate(self.sol):
+            slt+= "x^{{({})}}_{{r+1}} &= ".format(i+1)
+            for ii, f in enumerate(np.array([_ for _ in self.sol[i]['x'].T][:-1]) ):
+                if ( f < 0.00001):
+                    continue;
+                h = ii % self.order
+                k = int(ii / self.order) + 1
+                pp = (i+1, k)
+                f = '' if ( abs(1-f) <0.0001) else str(round(f, 4))
+                ri = '' if( h == 0) else "-"+str(h)
+                
+                slt += "{} P_{}^{{{}}} X_{{r{}}}^{{({})}} +" .format(f, h+1, pp, ri, k)
+            slt = slt[:-1];
+            slt += r"\\"
+        #    print()
+        slt+=r'''
+        \end{aligned}
+        \end{equation}
+        '''; #\\end{bmatrix}'
 
-    def SelfEval(self, scoreFirstOnly=False, msg=None):
+        m='''
+        x^{(j)}_{r+1} = \sum_{k=1}^{s}\sum_{h=1}^{n} \lambda^{(h)}_{jk} P^{(jk)}_h x^{(k)}_{r-h+1}, 
+        j = 1,2,...s, n = order
+        '''
+        display(Math(m))
+        display(Math(slt))
+        
+        return slt;
+
+    def Predict(self, Xr, randomized=False):
+        Xr_1= [None for _ in range(len(self.X))]
+        Pr_1= [-1 for _ in range(len(self.X))]
+
+        order = self.order
+        for i,s in enumerate(self.sol):
+            if (Xr[i] is None):
+                continue;
+            PXr = None
+            
+            for ii, lmbda in enumerate(np.array([_ for _ in s['x'].T][:-1]) ):
+                if ( lmbda == 0 ):
+                    continue;
+                h = ii % self.order
+                k = int(ii / self.order)
+                idx = (i+1, k+1, h+1)
+
+                if (Xr[k] is None):
+                    PXr = None
+                    break;
+
+                if (PXr is None):
+                    PXr =  lmbda * self.pS[idx] * self.makeX(Xr[k][h])
+                else:
+                    PXr += lmbda * self.pS[idx] * self.makeX(Xr[k][h])
+
+            Xr_1[i] = PXr
+            Pr_1[i] = -1 if PXr is None else np.argmax(PXr)
+
+        return Xr_1, Pr_1;
+    
+    def makeX(self, c):
+        if not ( isinstance( c , numbers.Number) ):
+            return c;
+        x = [0 for _ in range(self.nStates)]
+        x[c]=1
+        return np.matrix(x).T;
+    
+
+
+    def SelfEval(self, scoreFirstOnly=False, msg=''):
         Xr=[None for _ in range(len(self.X))]
         X = self.X
         order = self.order
